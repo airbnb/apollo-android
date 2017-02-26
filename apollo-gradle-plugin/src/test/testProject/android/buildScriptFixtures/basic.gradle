@@ -32,7 +32,7 @@ android {
   sourceSets {
     main {
       java {
-        srcDirs += '../../../../apollo-api/src/main/java'
+        srcDirs += '../../../../apollo-runtime/src/main/java'
       }
     }
   }
