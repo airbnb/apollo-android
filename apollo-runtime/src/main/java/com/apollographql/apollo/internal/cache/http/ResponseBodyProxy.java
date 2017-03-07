@@ -10,7 +10,6 @@ import javax.annotation.Nonnull;
 import okhttp3.MediaType;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import okhttp3.internal.http.HttpCodec;
 import okio.Buffer;
 import okio.BufferedSource;
 import okio.Okio;
@@ -23,6 +22,7 @@ import static okhttp3.internal.Util.closeQuietly;
 import static okhttp3.internal.Util.discard;
 
 final class ResponseBodyProxy extends ResponseBody {
+  private static final int DISCARD_STREAM_TIMEOUT_MILLIS = 100;
   private final String contentType;
   private final String contentLength;
   private final Source responseBodySource;
@@ -106,7 +106,7 @@ final class ResponseBodyProxy extends ResponseBody {
       if (closed) return;
       closed = true;
 
-      if (discard(this, HttpCodec.DISCARD_STREAM_TIMEOUT_MILLIS, MILLISECONDS)) {
+      if (discard(this, DISCARD_STREAM_TIMEOUT_MILLIS, MILLISECONDS)) {
         responseBodySource.close();
         commitCache();
       } else {

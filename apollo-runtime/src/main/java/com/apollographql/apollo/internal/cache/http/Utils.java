@@ -8,6 +8,7 @@ import java.util.Date;
 import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okhttp3.internal.Util;
 import okhttp3.internal.http.HttpDate;
 import okio.BufferedSink;
@@ -16,6 +17,9 @@ import okio.Okio;
 import okio.Sink;
 
 final class Utils {
+
+  static final ResponseBody EMPTY_RESPONSE = ResponseBody.create(null, new byte[0]);
+
   static Response strip(Response response) {
     return response != null && response.body() != null
         ? response.newBuilder().body(null).networkResponse(null).cacheResponse(null).build()
@@ -67,7 +71,7 @@ final class Utils {
         .protocol(Protocol.HTTP_1_1)
         .code(504)
         .message("Unsatisfiable Request (cache-only)")
-        .body(Util.EMPTY_RESPONSE)
+        .body(EMPTY_RESPONSE)
         .sentRequestAtMillis(-1L)
         .receivedResponseAtMillis(System.currentTimeMillis())
         .build();
