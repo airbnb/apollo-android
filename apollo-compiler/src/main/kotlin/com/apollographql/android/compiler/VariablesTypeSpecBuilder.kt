@@ -1,5 +1,6 @@
 package com.apollographql.android.compiler
 
+import com.apollographql.android.compiler.ir.CodeGenerationContext
 import com.apollographql.android.compiler.ir.Variable
 import com.squareup.javapoet.*
 import java.util.*
@@ -7,8 +8,7 @@ import javax.lang.model.element.Modifier
 
 class VariablesTypeSpecBuilder(
     val variables: List<Variable>,
-    val typesPackage: String,
-    val customScalarTypeMap: Map<String, String>
+    val context: CodeGenerationContext
 ) {
   fun build(): TypeSpec =
       TypeSpec.classBuilder(VARIABLES_CLASS_NAME)
@@ -19,13 +19,12 @@ class VariablesTypeSpecBuilder(
           .addConstructor()
           .addVariableAccessors()
           .addValueMapAccessor()
-          .addBuilder()
           .build()
 
   private fun TypeSpec.Builder.addVariableFields(): TypeSpec.Builder =
       addFields(variables.map { variable ->
         FieldSpec
-            .builder(variable.javaTypeName(customScalarTypeMap, typesPackage), variable.name.decapitalize())
+            .builder(variable.javaTypeName(context, context.typesPackage), variable.name.decapitalize())
             .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
             .build()
       })
@@ -34,7 +33,7 @@ class VariablesTypeSpecBuilder(
   private fun TypeSpec.Builder.addValueMapField(): TypeSpec.Builder =
       addField(FieldSpec.builder(ClassNames.parameterizedMapOf(java.lang.String::class.java, Object::class.java),
           VALUE_MAP_FIELD_NAME)
-          .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
+          .addModifiers(Modifier.PRIVATE, Modifier.FINAL, Modifier.TRANSIENT)
           .initializer("new \$T<>()", LinkedHashMap::class.java)
           .build())
 
@@ -50,7 +49,7 @@ class VariablesTypeSpecBuilder(
     return addMethod(MethodSpec
         .constructorBuilder()
         .addParameters(variables.map {
-          ParameterSpec.builder(it.javaTypeName(customScalarTypeMap, typesPackage), it.name.decapitalize()).build()
+          ParameterSpec.builder(it.javaTypeName(context, context.typesPackage), it.name.decapitalize()).build()
         })
         .addCode(fieldInitializeCode.build())
         .addCode(fieldMapInitializeCode.build())
@@ -63,7 +62,7 @@ class VariablesTypeSpecBuilder(
         MethodSpec
             .methodBuilder(variable.name)
             .addModifiers(Modifier.PUBLIC)
-            .returns(variable.javaTypeName(customScalarTypeMap, typesPackage))
+            .returns(variable.javaTypeName(context, context.typesPackage))
             .addStatement("return \$L", variable.name.decapitalize())
             .build()
       })
@@ -77,11 +76,11 @@ class VariablesTypeSpecBuilder(
           .addStatement("return \$T.unmodifiableMap(\$L)", Collections::class.java, VALUE_MAP_FIELD_NAME)
           .build())
 
-  private fun TypeSpec.Builder.addBuilder(): TypeSpec.Builder {
+  fun TypeSpec.Builder.builder(): TypeSpec.Builder {
     if (variables.isEmpty()) {
       return this
     } else {
-      val builderFields = variables.map { it.name.decapitalize() to it.javaTypeName(customScalarTypeMap, typesPackage) }
+      val builderFields = variables.map { it.name.decapitalize() to it.javaTypeName(context, context.typesPackage) }
       return addMethod(BuilderTypeSpecBuilder.builderFactoryMethod())
           .addType(BuilderTypeSpecBuilder(VARIABLES_TYPE_NAME, builderFields, emptyMap()).build())
     }
@@ -90,8 +89,8 @@ class VariablesTypeSpecBuilder(
   companion object {
     private val VARIABLES_CLASS_NAME: String = "Variables"
     private val VARIABLES_TYPE_NAME: ClassName = ClassName.get("", VARIABLES_CLASS_NAME)
-    private fun Variable.javaTypeName(customScalarTypeMap: Map<String, String>, packageName: String) =
-        JavaTypeResolver(customScalarTypeMap, packageName).resolve(type, !type.endsWith("!"))
+    private fun Variable.javaTypeName(context: CodeGenerationContext, packageName: String) =
+        JavaTypeResolver(context, packageName).resolve(type).unwrapOptionalType()
 
     private val VALUE_MAP_FIELD_NAME = "valueMap"
   }

@@ -6,6 +6,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Response;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ScalarType;
+import com.apollographql.android.cache.normalized.ResponseNormalizer;
 
 import java.io.IOException;
 import java.util.List;
@@ -13,38 +14,38 @@ import java.util.Map;
 
 import okhttp3.ResponseBody;
 
-final class HttpResponseBodyConverter {
-  private final Operation operation;
+final class HttpResponseBodyConverter<D extends Operation.Data, W> {
+  private final Operation<D, W, ?> operation;
   private final ResponseFieldMapper responseFieldMapper;
   private final Map<ScalarType, CustomTypeAdapter> customTypeAdapters;
 
-  HttpResponseBodyConverter(Operation operation, ResponseFieldMapper responseFieldMapper,
+  HttpResponseBodyConverter(Operation<D, W, ?> operation, ResponseFieldMapper responseFieldMapper,
       Map<ScalarType, CustomTypeAdapter> customTypeAdapters) {
     this.operation = operation;
     this.responseFieldMapper = responseFieldMapper;
     this.customTypeAdapters = customTypeAdapters;
   }
 
-  <T extends Operation.Data> Response<T> convert(ResponseBody responseBody,
-      final ResponseReaderShadow<Map<String, Object>> responseReaderShadow) throws IOException {
-    responseReaderShadow.willResolveRootQuery(operation);
+  Response<W> convert(ResponseBody responseBody,
+      final ResponseNormalizer<Map<String, Object>> networkResponseNormalizer) throws IOException {
+    networkResponseNormalizer.willResolveRootQuery(operation);
     BufferedSourceJsonReader jsonReader = null;
     try {
       jsonReader = new BufferedSourceJsonReader(responseBody.source());
       jsonReader.beginObject();
 
       ResponseJsonStreamReader responseStreamReader = new ResponseJsonStreamReader(jsonReader);
-      T data = null;
+      D data = null;
       List<Error> errors = null;
       while (responseStreamReader.hasNext()) {
         String name = responseStreamReader.nextName();
         if ("data".equals(name)) {
           //noinspection unchecked
-          data = (T) responseStreamReader.nextObject(false, new ResponseJsonStreamReader.ObjectReader<Object>() {
+          data = (D) responseStreamReader.nextObject(false, new ResponseJsonStreamReader.ObjectReader<Object>() {
             @Override public Object read(ResponseJsonStreamReader reader) throws IOException {
               Map<String, Object> buffer = reader.buffer();
               RealResponseReader<Map<String, Object>> realResponseReader = new RealResponseReader<>(operation, buffer,
-                  new MapFieldValueResolver(), customTypeAdapters, responseReaderShadow);
+                  new MapFieldValueResolver(), customTypeAdapters, networkResponseNormalizer);
               return responseFieldMapper.map(realResponseReader);
             }
           });
@@ -55,7 +56,7 @@ final class HttpResponseBodyConverter {
         }
       }
       jsonReader.endObject();
-      return new Response<>(operation, data, errors);
+      return new Response<>(operation, operation.wrapData(data), errors, networkResponseNormalizer.dependentKeys());
     } finally {
       if (jsonReader != null) {
         jsonReader.close();

@@ -10,31 +10,34 @@ class OperationTypeSpecBuilder(
     val fragments: List<Fragment>
 ) : CodeGenerator {
   private val OPERATION_TYPE_NAME = operation.operationName.capitalize()
-  private val OPERATION_VARIABLES_CLASS_NAME = ClassName.get("", "$OPERATION_TYPE_NAME.Variables")
-  private val DATA_VARIABLES_CLASS_NAME = ClassName.get("", "$OPERATION_TYPE_NAME.Data")
+  private val DATA_VAR_TYPE = ClassName.get("", "$OPERATION_TYPE_NAME.Data")
 
   override fun toTypeSpec(context: CodeGenerationContext): TypeSpec {
-    val newContext = context.plusReservedTypes(OPERATION_TYPE_NAME)
+    val newContext = context.copy(reservedTypeNames = context.reservedTypeNames.plus(OPERATION_TYPE_NAME))
     return TypeSpec.classBuilder(OPERATION_TYPE_NAME)
         .addAnnotation(Annotations.GENERATED_BY_APOLLO)
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-        .addQuerySuperInterface(operation.variables.isNotEmpty())
+        .addQuerySuperInterface(context)
         .addOperationDefinition(operation)
         .addQueryDocumentDefinition(fragments, newContext)
-        .addQueryConstructor(operation.variables.isNotEmpty())
-        .addVariablesDefinition(operation.variables, newContext.typesPackage, newContext.customTypeMap)
-        .addType(operation.toTypeSpec(newContext))
+        .addConstructor(context)
+        .addMethod(wrapDataMethod(context))
+        .addVariablesDefinition(operation.variables, newContext)
         .addResponseFieldMapperMethod()
+        .addBuilder(context)
+        .addType(operation.toTypeSpec(newContext))
         .build()
   }
 
-  private fun TypeSpec.Builder.addQuerySuperInterface(hasVariables: Boolean): TypeSpec.Builder {
+  private fun TypeSpec.Builder.addQuerySuperInterface(context: CodeGenerationContext): TypeSpec.Builder {
     val isMutation = operation.operationType == "mutation"
     val superInterfaceClassName = if (isMutation) ClassNames.GRAPHQL_MUTATION else ClassNames.GRAPHQL_QUERY
-    return if (hasVariables) {
-      addSuperinterface(ParameterizedTypeName.get(superInterfaceClassName, DATA_VARIABLES_CLASS_NAME, OPERATION_VARIABLES_CLASS_NAME))
+    return if (operation.variables.isNotEmpty()) {
+      addSuperinterface(ParameterizedTypeName.get(superInterfaceClassName, DATA_VAR_TYPE,
+          wrapperType(context), variablesType()))
     } else {
-      addSuperinterface(ParameterizedTypeName.get(superInterfaceClassName, DATA_VARIABLES_CLASS_NAME, ClassNames.GRAPHQL_OPERATION_VARIABLES))
+      addSuperinterface(ParameterizedTypeName.get(superInterfaceClassName, DATA_VAR_TYPE,
+          wrapperType(context), ClassNames.GRAPHQL_OPERATION_VARIABLES))
     }
   }
 
@@ -73,64 +76,113 @@ class OperationTypeSpecBuilder(
     return this
   }
 
-  private fun TypeSpec.Builder.addVariablesDefinition(variables: List<Variable>,
-      typesPackage: String, customScalarTypeMap: Map<String, String>): TypeSpec.Builder {
-    val queryFieldClassName =
-        if (variables.isNotEmpty()) OPERATION_VARIABLES_CLASS_NAME else ClassNames.GRAPHQL_OPERATION_VARIABLES
-    addField(FieldSpec.builder(queryFieldClassName, VARIABLES_FIELD_NAME)
+  private fun wrapDataMethod(context: CodeGenerationContext): MethodSpec {
+    return MethodSpec.methodBuilder("wrapData")
+        .addModifiers(Modifier.PUBLIC)
+        .addAnnotation(Override::class.java)
+        .addParameter(ParameterSpec.builder(DATA_VAR_TYPE, "data").build())
+        .returns(wrapperType(context))
+        .addStatement(
+            if (context.nullableValueGenerationType != NullableValueGenerationType.ANNOTATED) {
+              "return Optional.fromNullable(data)"
+            } else {
+              "return data"
+            })
+        .build()
+  }
+
+  private fun TypeSpec.Builder.addVariablesDefinition(variables: List<Variable>, context: CodeGenerationContext):
+      TypeSpec.Builder {
+    addField(FieldSpec.builder(variablesType(), VARIABLES_VAR)
         .addModifiers(Modifier.PRIVATE, Modifier.FINAL)
         .build()
     )
 
-    addMethod(MethodSpec.methodBuilder(VARIABLES_ACCESSOR_NAME)
+    addMethod(MethodSpec.methodBuilder(VARIABLES_VAR)
         .addAnnotation(Annotations.OVERRIDE)
         .addModifiers(Modifier.PUBLIC)
-        .returns(queryFieldClassName)
-        .addStatement("return ${VARIABLES_FIELD_NAME}")
+        .returns(variablesType())
+        .addStatement("return \$L", VARIABLES_VAR)
         .build()
     )
 
     if (variables.isNotEmpty()) {
-      addType(VariablesTypeSpecBuilder(variables, typesPackage, customScalarTypeMap).build())
+      addType(VariablesTypeSpecBuilder(variables, context).build())
     }
 
     return this
-  }
-
-  private fun TypeSpec.Builder.addQueryConstructor(hasVariables: Boolean): TypeSpec.Builder {
-    val methodBuilder = MethodSpec.constructorBuilder().addModifiers(Modifier.PUBLIC)
-    if (hasVariables) {
-      methodBuilder.addParameter(ParameterSpec.builder(OPERATION_VARIABLES_CLASS_NAME, VARIABLES_FIELD_NAME).build())
-    }
-    methodBuilder.addQueryConstructorCode(hasVariables)
-    return addMethod(methodBuilder.build())
-  }
-
-  private fun MethodSpec.Builder.addQueryConstructorCode(hasVariables: Boolean): MethodSpec.Builder {
-    val codeBuilder = CodeBlock.builder()
-    if (hasVariables) {
-      codeBuilder.addStatement("this.\$L = \$L", VARIABLES_FIELD_NAME, VARIABLES_FIELD_NAME)
-    } else {
-      codeBuilder.addStatement("this.\$L = \$T.EMPTY_VARIABLES", VARIABLES_FIELD_NAME, ClassNames.GRAPHQL_OPERATION)
-    }
-    return addCode(codeBuilder.build())
   }
 
   private fun TypeSpec.Builder.addResponseFieldMapperMethod(): TypeSpec.Builder {
     return addMethod(MethodSpec.methodBuilder("responseFieldMapper")
         .addAnnotation(Annotations.OVERRIDE)
         .addModifiers(Modifier.PUBLIC)
-        .returns(ParameterizedTypeName.get(ClassName.get(ResponseFieldMapper::class.java),
-            WildcardTypeName.subtypeOf(com.apollographql.android.api.graphql.Operation.Data::class.java)))
+        .returns(ParameterizedTypeName.get(ClassName.get(ResponseFieldMapper::class.java), DATA_VAR_TYPE))
         .addStatement("return new \$L.\$L()", Operation.DATA_TYPE_NAME, Util.MAPPER_TYPE_NAME)
         .build())
   }
+
+  private fun wrapperType(context: CodeGenerationContext) = when (context.nullableValueGenerationType) {
+    NullableValueGenerationType.GUAVA_OPTIONAL -> ClassNames.parameterizedGuavaOptional(DATA_VAR_TYPE)
+    NullableValueGenerationType.APOLLO_OPTIONAL -> ClassNames.parameterizedOptional(DATA_VAR_TYPE)
+    else -> DATA_VAR_TYPE
+  }
+
+  private fun TypeSpec.Builder.addConstructor(context: CodeGenerationContext): TypeSpec.Builder {
+    val code = if (operation.variables.isEmpty()) {
+      CodeBlock.of("this.\$L = \$T.EMPTY_VARIABLES;\n", VARIABLES_VAR, ClassNames.GRAPHQL_OPERATION)
+    } else {
+      val builder = operation.variables.map {
+        val name = it.name.decapitalize()
+        val type = JavaTypeResolver(context, context.typesPackage).resolve(it.type)
+        val optional = !it.type.endsWith("!")
+        if (!type.isPrimitive && !optional) {
+          CodeBlock.of("\$T.checkNotNull(\$L, \$S);\n", ClassNames.API_UTILS, name, "$name == null")
+        } else {
+          CodeBlock.of("")
+        }
+      }.fold(CodeBlock.builder(), CodeBlock.Builder::add)
+
+      operation.variables
+          .map { it.name.decapitalize() }
+          .mapIndexed { i, v -> CodeBlock.of("\$L\$L", if (i > 0) ", " else "", v) }
+          .fold(builder.add("\$L = new \$T(", VARIABLES_VAR, variablesType()), CodeBlock.Builder::add)
+          .add(");\n")
+          .build()
+    }
+    return MethodSpec.constructorBuilder()
+        .addModifiers(Modifier.PUBLIC)
+        .addParameters(operation.variables
+            .map { it.name.decapitalize() to it.type }
+            .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second) }
+            .map { ParameterSpec.builder(it.second.unwrapOptionalType(), it.first).build() })
+        .addCode(code)
+        .build()
+        .let { addMethod(it) }
+  }
+
+  private fun TypeSpec.Builder.addBuilder(context: CodeGenerationContext): TypeSpec.Builder {
+    if (operation.variables.isEmpty()) {
+      return this
+    }
+    addMethod(BuilderTypeSpecBuilder.builderFactoryMethod())
+    return operation.variables
+        .map { it.name.decapitalize() to it.type }
+        .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second).unwrapOptionalType() }
+        .let { BuilderTypeSpecBuilder(ClassName.get("", OPERATION_TYPE_NAME), it, emptyMap()) }
+        .let { addType(it.build()) }
+  }
+
+  private fun variablesType() =
+      if (operation.variables.isNotEmpty())
+        ClassName.get("", "$OPERATION_TYPE_NAME.Variables")
+      else
+        ClassNames.GRAPHQL_OPERATION_VARIABLES
 
   companion object {
     private val OPERATION_DEFINITION_FIELD_NAME = "OPERATION_DEFINITION"
     private val QUERY_DOCUMENT_FIELD_NAME = "QUERY_DOCUMENT"
     private val QUERY_DOCUMENT_ACCESSOR_NAME = "queryDocument"
-    private val VARIABLES_FIELD_NAME = "variables"
-    private val VARIABLES_ACCESSOR_NAME = "variables"
+    private val VARIABLES_VAR = "variables"
   }
 }

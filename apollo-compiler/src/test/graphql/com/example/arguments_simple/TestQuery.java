@@ -5,6 +5,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.apollographql.android.api.graphql.util.UnmodifiableMapBuilder;
 import com.example.arguments_simple.type.Episode;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
   public static final String OPERATION_DEFINITION = "query TestQuery($episode: Episode, $includeName: Boolean!) {\n"
       + "  hero(episode: $episode) {\n"
       + "    __typename\n"
@@ -30,8 +31,8 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(TestQuery.Variables variables) {
-    this.variables = variables;
+  public TestQuery(@Nullable Episode episode, boolean includeName) {
+    variables = new TestQuery.Variables(episode, includeName);
   }
 
   @Override
@@ -40,13 +41,22 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public TestQuery.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static final class Variables extends Operation.Variables {
@@ -54,7 +64,7 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
 
     private final boolean includeName;
 
-    private final Map<String, Object> valueMap = new LinkedHashMap<>();
+    private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
     Variables(@Nullable Episode episode, boolean includeName) {
       this.episode = episode;
@@ -75,43 +85,39 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     public Map<String, Object> valueMap() {
       return Collections.unmodifiableMap(valueMap);
     }
+  }
 
-    public static Builder builder() {
-      return new Builder();
+  public static final class Builder {
+    private @Nullable Episode episode;
+
+    private boolean includeName;
+
+    Builder() {
     }
 
-    public static final class Builder {
-      private @Nullable Episode episode;
+    public Builder episode(@Nullable Episode episode) {
+      this.episode = episode;
+      return this;
+    }
 
-      private boolean includeName;
+    public Builder includeName(boolean includeName) {
+      this.includeName = includeName;
+      return this;
+    }
 
-      Builder() {
-      }
-
-      public Builder episode(@Nullable Episode episode) {
-        this.episode = episode;
-        return this;
-      }
-
-      public Builder includeName(boolean includeName) {
-        this.includeName = includeName;
-        return this;
-      }
-
-      public Variables build() {
-        return new Variables(episode, includeName);
-      }
+    public TestQuery build() {
+      return new TestQuery(episode, includeName);
     }
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable Hero hero;
+    private final Optional<Hero> hero;
 
     public Data(@Nullable Hero hero) {
-      this.hero = hero;
+      this.hero = Optional.fromNullable(hero);
     }
 
-    public @Nullable Hero hero() {
+    public Optional<Hero> hero() {
       return this.hero;
     }
 
@@ -143,13 +149,13 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     }
 
     public static class Hero {
-      private final @Nullable String name;
+      private final Optional<String> name;
 
       public Hero(@Nullable String name) {
-        this.name = name;
+        this.name = Optional.fromNullable(name);
       }
 
-      public @Nullable String name() {
+      public Optional<String> name() {
         return this.name;
       }
 

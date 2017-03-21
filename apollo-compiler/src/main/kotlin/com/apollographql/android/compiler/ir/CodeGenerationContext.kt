@@ -1,31 +1,12 @@
 package com.apollographql.android.compiler.ir
 
+import com.apollographql.android.compiler.NullableValueGenerationType
+
 data class CodeGenerationContext(
     val reservedTypeNames: List<String>,
     val typeDeclarations: List<TypeDeclaration>,
     val fragmentsPackage: String = "",
     val typesPackage: String = "",
-    val customTypeMap: Map<String, String>
-) {
-  fun plusReservedTypes(vararg typeName: String): CodeGenerationContext = plusReservedTypes(typeName.toList())
-
-  fun plusReservedTypes(typeNames: List<String>): CodeGenerationContext =
-      CodeGenerationContext(
-          reservedTypeNames = reservedTypeNames.plus(typeNames),
-          typeDeclarations = typeDeclarations,
-          fragmentsPackage = fragmentsPackage,
-          typesPackage = typesPackage,
-          customTypeMap = customTypeMap
-      )
-
-  fun withReservedTypeNames(vararg typeName: String): CodeGenerationContext = withReservedTypeNames(typeName.asList())
-
-  fun withReservedTypeNames(reservedTypeNames: List<String>): CodeGenerationContext =
-      CodeGenerationContext(
-          reservedTypeNames = reservedTypeNames,
-          typeDeclarations = typeDeclarations,
-          fragmentsPackage = fragmentsPackage,
-          typesPackage = typesPackage,
-          customTypeMap = customTypeMap
-      )
-}
+    val customTypeMap: Map<String, String>,
+    val nullableValueGenerationType: NullableValueGenerationType
+)

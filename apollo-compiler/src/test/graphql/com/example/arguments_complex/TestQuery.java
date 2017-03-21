@@ -5,6 +5,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.apollographql.android.api.graphql.util.UnmodifiableMapBuilder;
 import com.example.arguments_complex.type.Episode;
 import java.io.IOException;
@@ -20,7 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
   public static final String OPERATION_DEFINITION = "query TestQuery($episode: Episode, $stars: Int!, $greenValue: Float!) {\n"
       + "  heroWithReview(episode: $episode, review: {stars: $stars, favoriteColor: {red: 0, green: $greenValue, blue: 0}}) {\n"
       + "    __typename\n"
@@ -33,8 +34,8 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(TestQuery.Variables variables) {
-    this.variables = variables;
+  public TestQuery(@Nullable Episode episode, int stars, double greenValue) {
+    variables = new TestQuery.Variables(episode, stars, greenValue);
   }
 
   @Override
@@ -43,13 +44,22 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public TestQuery.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static final class Variables extends Operation.Variables {
@@ -59,7 +69,7 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
 
     private final double greenValue;
 
-    private final Map<String, Object> valueMap = new LinkedHashMap<>();
+    private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
     Variables(@Nullable Episode episode, int stars, double greenValue) {
       this.episode = episode;
@@ -86,50 +96,46 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     public Map<String, Object> valueMap() {
       return Collections.unmodifiableMap(valueMap);
     }
+  }
 
-    public static Builder builder() {
-      return new Builder();
+  public static final class Builder {
+    private @Nullable Episode episode;
+
+    private int stars;
+
+    private double greenValue;
+
+    Builder() {
     }
 
-    public static final class Builder {
-      private @Nullable Episode episode;
+    public Builder episode(@Nullable Episode episode) {
+      this.episode = episode;
+      return this;
+    }
 
-      private int stars;
+    public Builder stars(int stars) {
+      this.stars = stars;
+      return this;
+    }
 
-      private double greenValue;
+    public Builder greenValue(double greenValue) {
+      this.greenValue = greenValue;
+      return this;
+    }
 
-      Builder() {
-      }
-
-      public Builder episode(@Nullable Episode episode) {
-        this.episode = episode;
-        return this;
-      }
-
-      public Builder stars(int stars) {
-        this.stars = stars;
-        return this;
-      }
-
-      public Builder greenValue(double greenValue) {
-        this.greenValue = greenValue;
-        return this;
-      }
-
-      public Variables build() {
-        return new Variables(episode, stars, greenValue);
-      }
+    public TestQuery build() {
+      return new TestQuery(episode, stars, greenValue);
     }
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable HeroWithReview heroWithReview;
+    private final Optional<HeroWithReview> heroWithReview;
 
     public Data(@Nullable HeroWithReview heroWithReview) {
-      this.heroWithReview = heroWithReview;
+      this.heroWithReview = Optional.fromNullable(heroWithReview);
     }
 
-    public @Nullable HeroWithReview heroWithReview() {
+    public Optional<HeroWithReview> heroWithReview() {
       return this.heroWithReview;
     }
 
@@ -163,18 +169,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     public static class HeroWithReview {
       private final @Nonnull String name;
 
-      private final @Nullable Double height;
+      private final Optional<Double> height;
 
       public HeroWithReview(@Nonnull String name, @Nullable Double height) {
         this.name = name;
-        this.height = height;
+        this.height = Optional.fromNullable(height);
       }
 
       public @Nonnull String name() {
         return this.name;
       }
 
-      public @Nullable Double height() {
+      public Optional<Double> height() {
         return this.height;
       }
 

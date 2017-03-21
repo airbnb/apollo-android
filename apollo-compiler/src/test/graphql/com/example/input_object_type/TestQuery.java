@@ -5,7 +5,9 @@ import com.apollographql.android.api.graphql.Mutation;
 import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.apollographql.android.api.graphql.util.UnmodifiableMapBuilder;
+import com.apollographql.android.api.graphql.util.Utils;
 import com.example.input_object_type.type.Episode;
 import com.example.input_object_type.type.ReviewInput;
 import java.io.IOException;
@@ -21,7 +23,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Variables> {
+public final class TestQuery implements Mutation<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
   public static final String OPERATION_DEFINITION = "mutation TestQuery($ep: Episode!, $review: ReviewInput!) {\n"
       + "  createReview(episode: $ep, review: $review) {\n"
       + "    __typename\n"
@@ -34,8 +36,10 @@ public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Varia
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(TestQuery.Variables variables) {
-    this.variables = variables;
+  public TestQuery(@Nonnull Episode ep, @Nonnull ReviewInput review) {
+    Utils.checkNotNull(ep, "ep == null");
+    Utils.checkNotNull(review, "review == null");
+    variables = new TestQuery.Variables(ep, review);
   }
 
   @Override
@@ -44,13 +48,22 @@ public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Varia
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public TestQuery.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static final class Variables extends Operation.Variables {
@@ -58,7 +71,7 @@ public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Varia
 
     private final @Nonnull ReviewInput review;
 
-    private final Map<String, Object> valueMap = new LinkedHashMap<>();
+    private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
     Variables(@Nonnull Episode ep, @Nonnull ReviewInput review) {
       this.ep = ep;
@@ -79,45 +92,41 @@ public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Varia
     public Map<String, Object> valueMap() {
       return Collections.unmodifiableMap(valueMap);
     }
+  }
 
-    public static Builder builder() {
-      return new Builder();
+  public static final class Builder {
+    private @Nonnull Episode ep;
+
+    private @Nonnull ReviewInput review;
+
+    Builder() {
     }
 
-    public static final class Builder {
-      private @Nonnull Episode ep;
+    public Builder ep(@Nonnull Episode ep) {
+      this.ep = ep;
+      return this;
+    }
 
-      private @Nonnull ReviewInput review;
+    public Builder review(@Nonnull ReviewInput review) {
+      this.review = review;
+      return this;
+    }
 
-      Builder() {
-      }
-
-      public Builder ep(@Nonnull Episode ep) {
-        this.ep = ep;
-        return this;
-      }
-
-      public Builder review(@Nonnull ReviewInput review) {
-        this.review = review;
-        return this;
-      }
-
-      public Variables build() {
-        if (ep == null) throw new IllegalStateException("ep can't be null");
-        if (review == null) throw new IllegalStateException("review can't be null");
-        return new Variables(ep, review);
-      }
+    public TestQuery build() {
+      if (ep == null) throw new IllegalStateException("ep can't be null");
+      if (review == null) throw new IllegalStateException("review can't be null");
+      return new TestQuery(ep, review);
     }
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable CreateReview createReview;
+    private final Optional<CreateReview> createReview;
 
     public Data(@Nullable CreateReview createReview) {
-      this.createReview = createReview;
+      this.createReview = Optional.fromNullable(createReview);
     }
 
-    public @Nullable CreateReview createReview() {
+    public Optional<CreateReview> createReview() {
       return this.createReview;
     }
 
@@ -151,18 +160,18 @@ public final class TestQuery implements Mutation<TestQuery.Data, TestQuery.Varia
     public static class CreateReview {
       private final int stars;
 
-      private final @Nullable String commentary;
+      private final Optional<String> commentary;
 
       public CreateReview(int stars, @Nullable String commentary) {
         this.stars = stars;
-        this.commentary = commentary;
+        this.commentary = Optional.fromNullable(commentary);
       }
 
       public int stars() {
         return this.stars;
       }
 
-      public @Nullable String commentary() {
+      public Optional<String> commentary() {
         return this.commentary;
       }
 

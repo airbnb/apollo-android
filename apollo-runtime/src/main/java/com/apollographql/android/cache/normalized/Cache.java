@@ -1,51 +1,27 @@
 package com.apollographql.android.cache.normalized;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Nonnull;
 
 public interface Cache {
 
   interface RecordChangeSubscriber {
-    /**
-     * @return Whether or not to keep the subscription active.
-     */
-     void onDependentKeysChanged();
+     void onCacheKeysChanged(Set<String> changedCacheKeys);
   }
 
-  void subscribe(RecordChangeSubscriber subscriber, Set<String> dependentKeys);
+  void subscribe(RecordChangeSubscriber subscriber);
 
   void unsubscribe(RecordChangeSubscriber subscriber);
 
-  ResponseNormalizer responseNormalizer();
+  void publish(Set<String> keys);
 
-  void write(@Nonnull Collection<Record> recordSet);
+  ResponseNormalizer<Map<String, Object>> networkResponseNormalizer();
 
-  Record read(@Nonnull String key);
+  ResponseNormalizer<Record> cacheResponseNormalizer();
 
-  Collection<Record> read(@Nonnull Collection<String> keys);
+  <R> R readTransaction(Transaction<ReadableCache, R> transaction);
 
-  Cache NO_CACHE = new Cache() {
+  <R> R writeTransaction(Transaction<WriteableCache, R> transaction);
 
-    @Override public void subscribe(RecordChangeSubscriber subscriber, Set<String> dependentKeys) { }
-
-    @Override public void unsubscribe(RecordChangeSubscriber subscriber) { }
-
-    @Override public ResponseNormalizer responseNormalizer() {
-      return ResponseNormalizer.NO_OP_NORMALIZER;
-    }
-
-    @Override public void write(@Nonnull Collection<Record> recordSet) {
-    }
-
-    @Override public Record read(@Nonnull String key) {
-      return null;
-    }
-
-    @Override public Collection<Record> read(@Nonnull Collection<String> keys) {
-      return Collections.emptyList();
-    }
-  };
+  Cache NO_CACHE = new NoOpCache();
 }

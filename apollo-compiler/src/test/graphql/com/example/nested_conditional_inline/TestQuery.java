@@ -5,6 +5,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.apollographql.android.api.graphql.util.UnmodifiableMapBuilder;
 import com.example.nested_conditional_inline.type.Episode;
 import java.io.IOException;
@@ -21,7 +22,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
   public static final String OPERATION_DEFINITION = "query TestQuery($episode: Episode) {\n"
       + "  hero(episode: $episode) {\n"
       + "    __typename\n"
@@ -55,8 +56,8 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(TestQuery.Variables variables) {
-    this.variables = variables;
+  public TestQuery(@Nullable Episode episode) {
+    variables = new TestQuery.Variables(episode);
   }
 
   @Override
@@ -65,19 +66,28 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public TestQuery.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static final class Variables extends Operation.Variables {
     private final @Nullable Episode episode;
 
-    private final Map<String, Object> valueMap = new LinkedHashMap<>();
+    private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
     Variables(@Nullable Episode episode) {
       this.episode = episode;
@@ -92,36 +102,32 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     public Map<String, Object> valueMap() {
       return Collections.unmodifiableMap(valueMap);
     }
+  }
 
-    public static Builder builder() {
-      return new Builder();
+  public static final class Builder {
+    private @Nullable Episode episode;
+
+    Builder() {
     }
 
-    public static final class Builder {
-      private @Nullable Episode episode;
+    public Builder episode(@Nullable Episode episode) {
+      this.episode = episode;
+      return this;
+    }
 
-      Builder() {
-      }
-
-      public Builder episode(@Nullable Episode episode) {
-        this.episode = episode;
-        return this;
-      }
-
-      public Variables build() {
-        return new Variables(episode);
-      }
+    public TestQuery build() {
+      return new TestQuery(episode);
     }
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable Hero hero;
+    private final Optional<Hero> hero;
 
     public Data(@Nullable Hero hero) {
-      this.hero = hero;
+      this.hero = Optional.fromNullable(hero);
     }
 
-    public @Nullable Hero hero() {
+    public Optional<Hero> hero() {
       return this.hero;
     }
 
@@ -155,25 +161,25 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
     public static class Hero {
       private final @Nonnull String name;
 
-      private @Nullable AsHuman asHuman;
+      private Optional<AsHuman> asHuman;
 
-      private @Nullable AsDroid asDroid;
+      private Optional<AsDroid> asDroid;
 
       public Hero(@Nonnull String name, @Nullable AsHuman asHuman, @Nullable AsDroid asDroid) {
         this.name = name;
-        this.asHuman = asHuman;
-        this.asDroid = asDroid;
+        this.asHuman = Optional.fromNullable(asHuman);
+        this.asDroid = Optional.fromNullable(asDroid);
       }
 
       public @Nonnull String name() {
         return this.name;
       }
 
-      public @Nullable AsHuman asHuman() {
+      public Optional<AsHuman> asHuman() {
         return this.asHuman;
       }
 
-      public @Nullable AsDroid asDroid() {
+      public Optional<AsDroid> asDroid() {
         return this.asDroid;
       }
 
@@ -215,18 +221,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
       public static class AsHuman {
         private final @Nonnull String name;
 
-        private final @Nullable List<Friend> friends;
+        private final Optional<List<Friend>> friends;
 
         public AsHuman(@Nonnull String name, @Nullable List<Friend> friends) {
           this.name = name;
-          this.friends = friends;
+          this.friends = Optional.fromNullable(friends);
         }
 
         public @Nonnull String name() {
           return this.name;
         }
 
-        public @Nullable List<Friend> friends() {
+        public Optional<List<Friend>> friends() {
           return this.friends;
         }
 
@@ -264,18 +270,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
         public static class Friend {
           private final @Nonnull String name;
 
-          private @Nullable AsHuman1 asHuman;
+          private Optional<AsHuman1> asHuman;
 
           public Friend(@Nonnull String name, @Nullable AsHuman1 asHuman) {
             this.name = name;
-            this.asHuman = asHuman;
+            this.asHuman = Optional.fromNullable(asHuman);
           }
 
           public @Nonnull String name() {
             return this.name;
           }
 
-          public @Nullable AsHuman1 asHuman() {
+          public Optional<AsHuman1> asHuman() {
             return this.asHuman;
           }
 
@@ -313,18 +319,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
           public static class AsHuman1 {
             private final @Nonnull String name;
 
-            private final @Nullable Double height;
+            private final Optional<Double> height;
 
             public AsHuman1(@Nonnull String name, @Nullable Double height) {
               this.name = name;
-              this.height = height;
+              this.height = Optional.fromNullable(height);
             }
 
             public @Nonnull String name() {
               return this.name;
             }
 
-            public @Nullable Double height() {
+            public Optional<Double> height() {
               return this.height;
             }
 
@@ -427,18 +433,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
       public static class AsDroid {
         private final @Nonnull String name;
 
-        private final @Nullable List<Friend> friends;
+        private final Optional<List<Friend>> friends;
 
         public AsDroid(@Nonnull String name, @Nullable List<Friend> friends) {
           this.name = name;
-          this.friends = friends;
+          this.friends = Optional.fromNullable(friends);
         }
 
         public @Nonnull String name() {
           return this.name;
         }
 
-        public @Nullable List<Friend> friends() {
+        public Optional<List<Friend>> friends() {
           return this.friends;
         }
 
@@ -476,18 +482,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
         public static class Friend {
           private final @Nonnull String name;
 
-          private @Nullable AsHuman asHuman;
+          private Optional<AsHuman> asHuman;
 
           public Friend(@Nonnull String name, @Nullable AsHuman asHuman) {
             this.name = name;
-            this.asHuman = asHuman;
+            this.asHuman = Optional.fromNullable(asHuman);
           }
 
           public @Nonnull String name() {
             return this.name;
           }
 
-          public @Nullable AsHuman asHuman() {
+          public Optional<AsHuman> asHuman() {
             return this.asHuman;
           }
 
@@ -525,18 +531,18 @@ public final class TestQuery implements Query<TestQuery.Data, TestQuery.Variable
           public static class AsHuman {
             private final @Nonnull String name;
 
-            private final @Nullable Double height;
+            private final Optional<Double> height;
 
             public AsHuman(@Nonnull String name, @Nullable Double height) {
               this.name = name;
-              this.height = height;
+              this.height = Optional.fromNullable(height);
             }
 
             public @Nonnull String name() {
               return this.name;
             }
 
-            public @Nullable Double height() {
+            public Optional<Double> height() {
               return this.height;
             }
 

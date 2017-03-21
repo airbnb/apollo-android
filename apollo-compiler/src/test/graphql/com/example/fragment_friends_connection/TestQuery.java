@@ -6,6 +6,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.example.fragment_friends_connection.fragment.HeroDetails;
 import java.io.IOException;
 import java.lang.Object;
@@ -16,7 +17,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, Operation.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
   public static final String OPERATION_DEFINITION = "query TestQuery {\n"
       + "  hero {\n"
       + "    __typename\n"
@@ -39,23 +40,28 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public Operation.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable Hero hero;
+    private final Optional<Hero> hero;
 
     public Data(@Nullable Hero hero) {
-      this.hero = hero;
+      this.hero = Optional.fromNullable(hero);
     }
 
-    public @Nullable Hero hero() {
+    public Optional<Hero> hero() {
       return this.hero;
     }
 
@@ -125,13 +131,13 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       }
 
       public static class Fragments {
-        private HeroDetails heroDetails;
+        private Optional<HeroDetails> heroDetails;
 
-        public Fragments(HeroDetails heroDetails) {
-          this.heroDetails = heroDetails;
+        public Fragments(@Nullable HeroDetails heroDetails) {
+          this.heroDetails = Optional.fromNullable(heroDetails);
         }
 
-        public @Nullable HeroDetails heroDetails() {
+        public Optional<HeroDetails> heroDetails() {
           return this.heroDetails;
         }
 

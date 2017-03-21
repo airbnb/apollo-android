@@ -20,12 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -50,7 +45,7 @@ public class NormalizedCacheTestCase {
     apolloClient = ApolloClient.builder()
         .serverUrl(server.url("/"))
         .okHttpClient(okHttpClient)
-        .normalizedCache(cacheStore, new CacheKeyResolver() {
+        .normalizedCache(cacheStore, new CacheKeyResolver<Map<String, Object>>() {
           @Nonnull @Override public CacheKey resolve(@NonNull Map<String, Object> jsonObject) {
             String id = (String) jsonObject.get("id");
             if (id == null || id.isEmpty()) {
@@ -70,7 +65,7 @@ public class NormalizedCacheTestCase {
   @Test public void episodeHeroName() throws IOException {
     server.enqueue(mockResponse("HeroNameResponse.json"));
 
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -83,8 +78,7 @@ public class NormalizedCacheTestCase {
   @Test public void heroAndFriendsNameResponse() throws IOException {
     server.enqueue(mockResponse("HeroAndFriendsNameResponse.json"));
 
-    HeroAndFriendsNames query = new HeroAndFriendsNames(HeroAndFriendsNames.Variables.builder().episode(Episode.JEDI)
-        .build());
+    HeroAndFriendsNames query = HeroAndFriendsNames.builder().episode(Episode.JEDI).build();
 
     Response<HeroAndFriendsNames.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -101,8 +95,7 @@ public class NormalizedCacheTestCase {
   @Test public void heroAndFriendsNamesWithIDs() throws IOException {
     server.enqueue(mockResponse("HeroAndFriendsNameWithIdsResponse.json"));
 
-    HeroAndFriendsNamesWithIDs query = new HeroAndFriendsNamesWithIDs(HeroAndFriendsNamesWithIDs.Variables.builder()
-        .episode(Episode.NEWHOPE).build());
+    HeroAndFriendsNamesWithIDs query = HeroAndFriendsNamesWithIDs.builder().episode(Episode.NEWHOPE).build();
 
     Response<HeroAndFriendsNamesWithIDs.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -123,8 +116,8 @@ public class NormalizedCacheTestCase {
   @Test public void heroAndFriendsNameWithIdsForParentOnly() throws IOException {
     server.enqueue(mockResponse("HeroAndFriendsNameWithIdsParentOnlyResponse.json"));
 
-    HeroAndFriendsNamesWithIDForParentOnly query = new HeroAndFriendsNamesWithIDForParentOnly
-        (HeroAndFriendsNamesWithIDForParentOnly.Variables.builder().episode(Episode.NEWHOPE).build());
+    HeroAndFriendsNamesWithIDForParentOnly query = HeroAndFriendsNamesWithIDForParentOnly.builder()
+        .episode(Episode.NEWHOPE).build();
 
     Response<HeroAndFriendsNamesWithIDForParentOnly.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -158,8 +151,7 @@ public class NormalizedCacheTestCase {
   @Test public void heroParentTypeDependentField() throws IOException {
     server.enqueue(mockResponse("HeroParentTypeDependentFieldDroidResponse.json"));
 
-    HeroParentTypeDependentField query = new HeroParentTypeDependentField(HeroParentTypeDependentField.Variables
-        .builder().episode(Episode.NEWHOPE).build());
+    HeroParentTypeDependentField query = HeroParentTypeDependentField.builder().episode(Episode.NEWHOPE).build();
 
     Response<HeroParentTypeDependentField.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -177,8 +169,7 @@ public class NormalizedCacheTestCase {
   @Test public void heroTypeDependentAliasedField() throws IOException {
     server.enqueue(mockResponse("HeroTypeDependentAliasedFieldResponse.json"));
 
-    HeroTypeDependentAliasedField query = new HeroTypeDependentAliasedField(HeroTypeDependentAliasedField.Variables
-        .builder().episode(Episode.NEWHOPE).build());
+    HeroTypeDependentAliasedField query = HeroTypeDependentAliasedField.builder().episode(Episode.NEWHOPE).build();
 
     Response<HeroTypeDependentAliasedField.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -219,7 +210,7 @@ public class NormalizedCacheTestCase {
   @Test public void cacheFirst() throws IOException {
     server.enqueue(mockResponse("HeroNameResponse.json"));
 
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -232,7 +223,7 @@ public class NormalizedCacheTestCase {
   @Test public void cacheOnly() throws IOException {
     server.enqueue(mockResponse("HeroNameResponse.json"));
 
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -245,7 +236,7 @@ public class NormalizedCacheTestCase {
   @Test public void networkFirst() throws IOException {
     server.enqueue(mockResponse("HeroNameResponse.json"));
 
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();
@@ -266,7 +257,7 @@ public class NormalizedCacheTestCase {
   @Test public void networkOnly() throws IOException {
     server.enqueue(mockResponse("HeroNameResponse.json"));
 
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
     assertThat(body.isSuccessful()).isTrue();

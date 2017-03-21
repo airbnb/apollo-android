@@ -6,6 +6,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import com.example.fragments_with_type_condition.fragment.DroidDetails;
 import com.example.fragments_with_type_condition.fragment.HumanDetails;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, Operation.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
   public static final String OPERATION_DEFINITION = "query TestQuery {\n"
       + "  r2: hero {\n"
       + "    __typename\n"
@@ -47,30 +48,35 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public Operation.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable R2 r2;
+    private final Optional<R2> r2;
 
-    private final @Nullable Luke luke;
+    private final Optional<Luke> luke;
 
     public Data(@Nullable R2 r2, @Nullable Luke luke) {
-      this.r2 = r2;
-      this.luke = luke;
+      this.r2 = Optional.fromNullable(r2);
+      this.luke = Optional.fromNullable(luke);
     }
 
-    public @Nullable R2 r2() {
+    public Optional<R2> r2() {
       return this.r2;
     }
 
-    public @Nullable Luke luke() {
+    public Optional<Luke> luke() {
       return this.luke;
     }
 
@@ -144,20 +150,20 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       }
 
       public static class Fragments {
-        private HumanDetails humanDetails;
+        private Optional<HumanDetails> humanDetails;
 
-        private DroidDetails droidDetails;
+        private Optional<DroidDetails> droidDetails;
 
-        public Fragments(HumanDetails humanDetails, DroidDetails droidDetails) {
-          this.humanDetails = humanDetails;
-          this.droidDetails = droidDetails;
+        public Fragments(@Nullable HumanDetails humanDetails, @Nullable DroidDetails droidDetails) {
+          this.humanDetails = Optional.fromNullable(humanDetails);
+          this.droidDetails = Optional.fromNullable(droidDetails);
         }
 
-        public @Nullable HumanDetails humanDetails() {
+        public Optional<HumanDetails> humanDetails() {
           return this.humanDetails;
         }
 
-        public @Nullable DroidDetails droidDetails() {
+        public Optional<DroidDetails> droidDetails() {
           return this.droidDetails;
         }
 
@@ -273,20 +279,20 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       }
 
       public static class Fragments {
-        private HumanDetails humanDetails;
+        private Optional<HumanDetails> humanDetails;
 
-        private DroidDetails droidDetails;
+        private Optional<DroidDetails> droidDetails;
 
-        public Fragments(HumanDetails humanDetails, DroidDetails droidDetails) {
-          this.humanDetails = humanDetails;
-          this.droidDetails = droidDetails;
+        public Fragments(@Nullable HumanDetails humanDetails, @Nullable DroidDetails droidDetails) {
+          this.humanDetails = Optional.fromNullable(humanDetails);
+          this.droidDetails = Optional.fromNullable(droidDetails);
         }
 
-        public @Nullable HumanDetails humanDetails() {
+        public Optional<HumanDetails> humanDetails() {
           return this.humanDetails;
         }
 
-        public @Nullable DroidDetails droidDetails() {
+        public Optional<DroidDetails> droidDetails() {
           return this.droidDetails;
         }
 

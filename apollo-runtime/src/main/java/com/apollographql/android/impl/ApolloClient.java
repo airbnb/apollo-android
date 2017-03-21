@@ -60,8 +60,8 @@ public final class ApolloClient implements ApolloCall.Factory {
   }
 
   @Override
-  public <D extends Operation.Data, V extends Operation.Variables> ApolloCall<D> newCall(
-      @Nonnull Operation<D, V> operation) {
+  public <D extends Operation.Data, T, V extends Operation.Variables> ApolloCall<T> newCall(
+      @Nonnull Operation<D, T, V> operation) {
     ResponseFieldMapper responseFieldMapper;
     synchronized (responseFieldMapperPool) {
       responseFieldMapper = responseFieldMapperPool.get(operation.getClass());
@@ -75,8 +75,8 @@ public final class ApolloClient implements ApolloCall.Factory {
   }
 
   @Override
-  public <D extends Operation.Data, V extends Operation.Variables> ApolloPrefetch prefetch(
-      @Nonnull Operation<D, V> operation) {
+  public <D extends Operation.Data, T, V extends Operation.Variables> ApolloPrefetch prefetch(
+      @Nonnull Operation<D, T, V> operation) {
     return new RealApolloPrefetch(operation, serverUrl, httpCallFactory, moshi);
   }
 
@@ -130,7 +130,7 @@ public final class ApolloClient implements ApolloCall.Factory {
     }
 
     public Builder normalizedCache(@Nonnull CacheStore cacheStore,
-        @Nonnull CacheKeyResolver cacheKeyResolver) {
+        @Nonnull CacheKeyResolver<Map<String, Object>> cacheKeyResolver) {
       checkNotNull(cacheStore, "cacheStore == null");
       checkNotNull(cacheKeyResolver, "cacheKeyResolver == null");
       this.cache = new RealCache(cacheStore, cacheKeyResolver);

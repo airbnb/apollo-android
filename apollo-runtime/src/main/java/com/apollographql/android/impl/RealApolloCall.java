@@ -12,8 +12,11 @@ import com.apollographql.android.cache.http.HttpCacheControl;
 import com.apollographql.android.cache.normalized.Cache;
 import com.apollographql.android.cache.normalized.CacheControl;
 import com.apollographql.android.cache.normalized.CacheKeyResolver;
+import com.apollographql.android.cache.normalized.ReadableCache;
 import com.apollographql.android.cache.normalized.Record;
 import com.apollographql.android.cache.normalized.ResponseNormalizer;
+import com.apollographql.android.cache.normalized.Transaction;
+import com.apollographql.android.cache.normalized.WriteableCache;
 import com.apollographql.android.impl.util.HttpException;
 import com.squareup.moshi.Moshi;
 
@@ -29,7 +32,7 @@ import okhttp3.Call;
 import okhttp3.HttpUrl;
 import okhttp3.internal.Util;
 
-final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall implements ApolloCall<T> {
+final class RealApolloCall<T> extends BaseApolloCall implements ApolloCall<T> {
   volatile Call httpCall;
   private final Cache cache;
   private CacheControl cacheControl;
@@ -38,7 +41,6 @@ final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall impl
   private final ResponseFieldMapper responseFieldMapper;
   private final Map<ScalarType, CustomTypeAdapter> customTypeAdapters;
   private final ExecutorService dispatcher;
-  private Set<String> dependentKeys;
   private boolean executed;
 
   RealApolloCall(Operation operation, HttpUrl serverUrl, Call.Factory httpCallFactory, HttpCache httpCache, Moshi moshi,
@@ -109,7 +111,7 @@ final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall impl
           return;
         }
 
-        httpCall.enqueue(new HttCallback(callback));
+        httpCall.enqueue(new HttpCallback(callback));
       }
     });
   }
@@ -150,10 +152,6 @@ final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall impl
         responseFieldMapper, customTypeAdapters, cache, cacheControl, dispatcher);
   }
 
-  Set<String> dependentKeys() {
-    return dependentKeys;
-  }
-
   private Response<T> executeNetworkRequest() throws IOException {
     Response<T> networkResponse;
     try {
@@ -178,36 +176,45 @@ final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall impl
   }
 
   @SuppressWarnings("unchecked") private Response<T> cachedResponse() {
-    Record rootRecord = cache.read(CacheKeyResolver.rootKeyForOperation(operation).key());
-    if (rootRecord == null) {
-      return new Response<>(operation);
-    }
-
-    try {
-      RealResponseReader<Record> responseReader = new RealResponseReader<>(operation, rootRecord,
-          new CacheFieldValueResolver(cache, operation.variables()), customTypeAdapters);
-      return new Response<>(operation, (T) responseFieldMapper.map(responseReader), null);
-    } catch (Exception e) {
-      //TODO log me
-      return new Response<>(operation);
-    }
+    final ResponseNormalizer<Record> cacheResponseNormalizer = cache.cacheResponseNormalizer();
+    return cache.readTransaction(new Transaction<ReadableCache, Response<T>>() {
+      @Nullable @Override public Response<T> execute(ReadableCache cache) {
+        cacheResponseNormalizer.willResolveRootQuery(operation);
+        Record rootRecord = cache.read(CacheKeyResolver.rootKeyForOperation(operation).key());
+        if (rootRecord == null) {
+          return new Response<>(operation);
+        }
+        try {
+          RealResponseReader<Record> responseReader = new RealResponseReader<>(operation, rootRecord,
+              new CacheFieldValueResolver(cache, operation.variables()), customTypeAdapters, cacheResponseNormalizer);
+          return new Response<>(operation, (T) responseFieldMapper.map(responseReader), null,
+              cacheResponseNormalizer.dependentKeys());
+        } catch (Exception e) {
+          //TODO log me
+          return new Response<>(operation);
+        }
+      }
+    });
   }
 
-  private <T extends Operation.Data> Response<T> handleResponse(okhttp3.Response response) throws IOException {
+  @SuppressWarnings("unchecked") private Response<T> handleResponse(okhttp3.Response response) throws IOException {
     String cacheKey = response.request().header(HttpCache.CACHE_KEY_HEADER);
     if (response.isSuccessful()) {
       try {
-        final ResponseNormalizer normalizer = cache.responseNormalizer();
+        final ResponseNormalizer<Map<String, Object>> normalizer = cache.networkResponseNormalizer();
         HttpResponseBodyConverter converter = new HttpResponseBodyConverter(operation, responseFieldMapper,
             customTypeAdapters);
         Response<T> convertedResponse = converter.convert(response.body(), normalizer);
         dispatcher.execute(new Runnable() {
           @Override public void run() {
-            cache.write(normalizer.records());
+            Set<String> changedKeys = cache.writeTransaction(new Transaction<WriteableCache, Set<String>>() {
+              @Nullable @Override public Set<String> execute(WriteableCache cache) {
+                return cache.merge(normalizer.records());
+              }
+            });
+            cache.publish(changedKeys);
           }
         });
-        cache.write(normalizer.records());
-        dependentKeys = normalizer.dependentKeys();
         return convertedResponse;
       } catch (Exception rethrown) {
         Util.closeQuietly(response);
@@ -222,10 +229,10 @@ final class RealApolloCall<T extends Operation.Data> extends BaseApolloCall impl
     }
   }
 
-  final class HttCallback implements okhttp3.Callback {
+  final class HttpCallback implements okhttp3.Callback {
     final Callback<T> callback;
 
-    HttCallback(Callback<T> callback) {
+    HttpCallback(Callback<T> callback) {
       this.callback = callback;
     }
 

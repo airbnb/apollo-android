@@ -5,6 +5,7 @@ import com.apollographql.android.api.graphql.Operation;
 import com.apollographql.android.api.graphql.Query;
 import com.apollographql.android.api.graphql.ResponseFieldMapper;
 import com.apollographql.android.api.graphql.ResponseReader;
+import com.apollographql.android.api.graphql.internal.Optional;
 import java.io.IOException;
 import java.lang.Boolean;
 import java.lang.Double;
@@ -18,7 +19,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
-public final class TestQuery implements Query<TestQuery.Data, Operation.Variables> {
+public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
   public static final String OPERATION_DEFINITION = "";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
@@ -35,37 +36,42 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
   }
 
   @Override
+  public Optional<TestQuery.Data> wrapData(TestQuery.Data data) {
+    return Optional.fromNullable(data);
+  }
+
+  @Override
   public Operation.Variables variables() {
     return variables;
   }
 
   @Override
-  public ResponseFieldMapper<? extends Operation.Data> responseFieldMapper() {
+  public ResponseFieldMapper<TestQuery.Data> responseFieldMapper() {
     return new Data.Mapper();
   }
 
   public static class Data implements Operation.Data {
-    private final @Nullable String graphQlString;
+    private final Optional<String> graphQlString;
 
-    private final @Nullable String graphQlIdNullable;
+    private final Optional<String> graphQlIdNullable;
 
     private final @Nonnull String graphQlIdNonNullable;
 
-    private final @Nullable Integer graphQlIntNullable;
+    private final Optional<Integer> graphQlIntNullable;
 
     private final int graphQlIntNonNullable;
 
-    private final @Nullable Double graphQlFloatNullable;
+    private final Optional<Double> graphQlFloatNullable;
 
     private final double graphQlFloatNonNullable;
 
-    private final @Nullable Boolean graphQlBooleanNullable;
+    private final Optional<Boolean> graphQlBooleanNullable;
 
     private final boolean graphQlBooleanNonNullable;
 
-    private final @Nullable List<Integer> graphQlListOfInt;
+    private final Optional<List<Integer>> graphQlListOfInt;
 
-    private final @Nullable List<GraphQlListOfObject> graphQlListOfObjects;
+    private final Optional<List<GraphQlListOfObject>> graphQlListOfObjects;
 
     public Data(@Nullable String graphQlString, @Nullable String graphQlIdNullable,
         @Nonnull String graphQlIdNonNullable, @Nullable Integer graphQlIntNullable,
@@ -73,24 +79,24 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
         double graphQlFloatNonNullable, @Nullable Boolean graphQlBooleanNullable,
         boolean graphQlBooleanNonNullable, @Nullable List<Integer> graphQlListOfInt,
         @Nullable List<GraphQlListOfObject> graphQlListOfObjects) {
-      this.graphQlString = graphQlString;
-      this.graphQlIdNullable = graphQlIdNullable;
+      this.graphQlString = Optional.fromNullable(graphQlString);
+      this.graphQlIdNullable = Optional.fromNullable(graphQlIdNullable);
       this.graphQlIdNonNullable = graphQlIdNonNullable;
-      this.graphQlIntNullable = graphQlIntNullable;
+      this.graphQlIntNullable = Optional.fromNullable(graphQlIntNullable);
       this.graphQlIntNonNullable = graphQlIntNonNullable;
-      this.graphQlFloatNullable = graphQlFloatNullable;
+      this.graphQlFloatNullable = Optional.fromNullable(graphQlFloatNullable);
       this.graphQlFloatNonNullable = graphQlFloatNonNullable;
-      this.graphQlBooleanNullable = graphQlBooleanNullable;
+      this.graphQlBooleanNullable = Optional.fromNullable(graphQlBooleanNullable);
       this.graphQlBooleanNonNullable = graphQlBooleanNonNullable;
-      this.graphQlListOfInt = graphQlListOfInt;
-      this.graphQlListOfObjects = graphQlListOfObjects;
+      this.graphQlListOfInt = Optional.fromNullable(graphQlListOfInt);
+      this.graphQlListOfObjects = Optional.fromNullable(graphQlListOfObjects);
     }
 
-    public @Nullable String graphQlString() {
+    public Optional<String> graphQlString() {
       return this.graphQlString;
     }
 
-    public @Nullable String graphQlIdNullable() {
+    public Optional<String> graphQlIdNullable() {
       return this.graphQlIdNullable;
     }
 
@@ -98,7 +104,7 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       return this.graphQlIdNonNullable;
     }
 
-    public @Nullable Integer graphQlIntNullable() {
+    public Optional<Integer> graphQlIntNullable() {
       return this.graphQlIntNullable;
     }
 
@@ -106,7 +112,7 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       return this.graphQlIntNonNullable;
     }
 
-    public @Nullable Double graphQlFloatNullable() {
+    public Optional<Double> graphQlFloatNullable() {
       return this.graphQlFloatNullable;
     }
 
@@ -114,7 +120,7 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       return this.graphQlFloatNonNullable;
     }
 
-    public @Nullable Boolean graphQlBooleanNullable() {
+    public Optional<Boolean> graphQlBooleanNullable() {
       return this.graphQlBooleanNullable;
     }
 
@@ -122,11 +128,11 @@ public final class TestQuery implements Query<TestQuery.Data, Operation.Variable
       return this.graphQlBooleanNonNullable;
     }
 
-    public @Nullable List<Integer> graphQlListOfInt() {
+    public Optional<List<Integer>> graphQlListOfInt() {
       return this.graphQlListOfInt;
     }
 
-    public @Nullable List<GraphQlListOfObject> graphQlListOfObjects() {
+    public Optional<List<GraphQlListOfObject>> graphQlListOfObjects() {
       return this.graphQlListOfObjects;
     }
 

@@ -43,7 +43,7 @@ public class AsyncNormalizedCacheTestCase {
     apolloClient = ApolloClient.builder()
         .serverUrl(server.url("/"))
         .okHttpClient(okHttpClient)
-        .normalizedCache(cacheStore, new CacheKeyResolver() {
+        .normalizedCache(cacheStore, new CacheKeyResolver<Map<String, Object>>() {
           @Nonnull @Override public CacheKey resolve(@NonNull Map<String, Object> jsonObject) {
             String id = (String) jsonObject.get("id");
             if (Strings.isNullOrEmpty(id)) {
@@ -60,7 +60,7 @@ public class AsyncNormalizedCacheTestCase {
   }
 
   @Test public void testAsync() throws IOException, InterruptedException {
-    EpisodeHeroName query = new EpisodeHeroName(EpisodeHeroName.Variables.builder().episode(Episode.EMPIRE).build());
+    EpisodeHeroName query = EpisodeHeroName.builder().episode(Episode.EMPIRE).build();
 
     server.enqueue(mockResponse("HeroNameResponse.json"));
     Response<EpisodeHeroName.Data> body = apolloClient.newCall(query).execute();
